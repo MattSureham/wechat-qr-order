@@ -73,7 +73,15 @@ python -m uvicorn app.main:app --reload
 1. 下载 HBuilderX: https://www.dcloud.io/hbuilderx.html
 2. 用 HBuilderX 打开 `frontend` 目录
 3. 修改 `manifest.json` 中的 `YOUR_WECHAT_APPID` 为你的小程序 AppID
-4. 点击菜单：发行 -> 微信小程序
+
+**运行项目：**
+- 快捷键：**Ctrl + R** (Windows) / **Cmd + R** (Mac)
+- 或者点击菜单：**运行** -> **运行到浏览器** -> 选择 Chrome/Safari
+- 首次运行会自动安装 uni-app 依赖
+
+**发行小程序：**
+- 菜单：**发行** -> **微信小程序** -> **发行**
+- 首次需要配置微信开发者工具安装路径
 
 #### 方式二：命令行
 
