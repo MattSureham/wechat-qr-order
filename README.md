@@ -66,12 +66,30 @@ python -m uvicorn app.main:app --reload
 # 服务运行在 http://localhost:8000
 ```
 
-### 3. 配置前端
+### 3. 安装前端依赖并启动
+
+#### 方式一：使用 HBuilderX（推荐）
 
 1. 下载 HBuilderX: https://www.dcloud.io/hbuilderx.html
 2. 用 HBuilderX 打开 `frontend` 目录
 3. 修改 `manifest.json` 中的 `YOUR_WECHAT_APPID` 为你的小程序 AppID
-4. 发行 -> 微信小程序
+4. 点击菜单：发行 -> 微信小程序
+
+#### 方式二：命令行
+
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev:mp-weixin
+
+# 构建生产
+npm run build:mp-weixin
+```
 
 ### 4. 配置桌码
 
