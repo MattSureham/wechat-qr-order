@@ -25,8 +25,7 @@ export default {
 </script>
 
 <style>
-@import url('./common/uni.css');
-
+/* Base styles */
 page {
   background-color: #f5f5f5;
   font-size: 28rpx;
