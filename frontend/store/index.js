@@ -3,9 +3,31 @@ import Vuex from 'vuex';
 
 Vue.use(Vuex);
 
+// 从本地存储加载购物车数据
+const loadCartFromStorage = () => {
+  try {
+    const cart = uni.getStorageSync('cart');
+    return cart ? JSON.parse(cart) : [];
+  } catch (e) {
+    console.error('Failed to load cart from storage:', e);
+    return [];
+  }
+};
+
+// 保存购物车到本地存储
+const saveCartToStorage = (cart) => {
+  try {
+    uni.setStorageSync('cart', JSON.stringify(cart));
+  } catch (e) {
+    console.error('Failed to save cart to storage:', e);
+  }
+};
+
 const store = new Vuex.Store({
   state: {
-    cart: []
+    cart: loadCartFromStorage(),
+    // API配置
+    apiBaseUrl: 'http://localhost:8000'
   },
   getters: {
     cartItemCount: state => {
@@ -30,12 +52,16 @@ const store = new Vuex.Store({
           subtotal: product.price
         });
       }
+      // 持久化到本地存储
+      saveCartToStorage(state.cart);
     },
     removeFromCart(state, productId) {
       const index = state.cart.findIndex(item => item.id === productId);
       if (index > -1) {
         state.cart.splice(index, 1);
       }
+      // 持久化到本地存储
+      saveCartToStorage(state.cart);
     },
     increaseQuantity(state, productId) {
       const item = state.cart.find(item => item.id === productId);
@@ -43,6 +69,8 @@ const store = new Vuex.Store({
         item.quantity++;
         item.subtotal = item.quantity * item.price;
       }
+      // 持久化到本地存储
+      saveCartToStorage(state.cart);
     },
     decreaseQuantity(state, productId) {
       const item = state.cart.find(item => item.id === productId);
@@ -50,9 +78,16 @@ const store = new Vuex.Store({
         item.quantity--;
         item.subtotal = item.quantity * item.price;
       }
+      // 持久化到本地存储
+      saveCartToStorage(state.cart);
     },
     clearCart(state) {
       state.cart = [];
+      // 持久化到本地存储
+      saveCartToStorage(state.cart);
+    },
+    setApiBaseUrl(state, url) {
+      state.apiBaseUrl = url;
     }
   }
 });

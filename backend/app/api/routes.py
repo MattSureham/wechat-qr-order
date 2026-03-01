@@ -61,7 +61,10 @@ def get_categories(
     db: Session = Depends(get_db)
 ):
     """获取分类列表"""
-    query = db.query(models.Category)
+    # Filter by merchant_id for backward compatibility
+    query = db.query(models.Category).filter(
+        (models.Category.merchant_id == merchant_id) | (models.Category.merchant_id == None)
+    )
     if is_active:
         query = query.filter(models.Category.is_active == True)
     return query.order_by(models.Category.sort_order).all()
