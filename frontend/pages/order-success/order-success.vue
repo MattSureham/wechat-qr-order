@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 export default {
   data() {
     return {
@@ -45,6 +47,9 @@ export default {
       paymentMethod: 'wechat',
       tableNumber: ''
     };
+  },
+  computed: {
+    ...mapState(['apiBaseUrl'])
   },
   onLoad(options) {
     if (options.order_id) {
@@ -55,7 +60,7 @@ export default {
     async loadOrder(orderId) {
       try {
         const res = await uni.request({
-          url: `http://localhost:8000/api/orders/${orderId}`
+          url: `${this.apiBaseUrl}/api/orders/${orderId}`
         });
         
         if (res.data) {
@@ -70,11 +75,13 @@ export default {
         console.error('加载订单失败', e);
       }
     },
+
     goHome() {
       uni.switchTab({
         url: '/pages/index/index'
       });
     },
+
     viewOrders() {
       uni.navigateTo({
         url: '/pages/orders/orders'

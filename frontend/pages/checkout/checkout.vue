@@ -75,11 +75,12 @@ export default {
     return {
       remark: '',
       paymentMethod: 'wechat',
-      currentTable: null
+      currentTable: null,
+      submitting: false
     };
   },
   computed: {
-    ...mapState(['cart']),
+    ...mapState(['cart', 'apiBaseUrl']),
     ...mapGetters(['cartTotal'])
   },
   onLoad() {
@@ -92,6 +93,11 @@ export default {
         return;
       }
 
+      if (this.submitting) {
+        return;
+      }
+
+      this.submitting = true;
       uni.showLoading({ title: '提交中...' });
 
       try {
@@ -109,7 +115,7 @@ export default {
         };
 
         const res = await uni.request({
-          url: 'http://localhost:8000/api/orders',
+          url: `${this.apiBaseUrl}/api/orders`,
           method: 'POST',
           data: orderData
         });
@@ -117,11 +123,14 @@ export default {
         if (res.data && res.data.id) {
           // 模拟支付
           await this.processPayment(res.data.id);
+        } else {
+          uni.showToast({ title: '创建订单失败', icon: 'none' });
         }
       } catch (e) {
         console.error('提交订单失败', e);
-        uni.showToast({ title: '提交失败', icon: 'none' });
+        uni.showToast({ title: '提交失败，请重试', icon: 'none' });
       } finally {
+        this.submitting = false;
         uni.hideLoading();
       }
     },
@@ -134,7 +143,7 @@ export default {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         const payRes = await uni.request({
-          url: `http://localhost:8000/api/orders/${orderId}/pay`,
+          url: `${this.apiBaseUrl}/api/orders/${orderId}/pay`,
           method: 'PUT',
           data: {
             payment_method: this.paymentMethod,
@@ -145,6 +154,9 @@ export default {
         if (payRes.data && payRes.data.status === 'paid') {
           // 清除购物车
           this.$store.commit('clearCart');
+          
+          // 清除桌位信息
+          uni.removeStorageSync('currentTable');
 
           uni.showToast({ title: '支付成功', icon: 'success' });
 
@@ -156,7 +168,7 @@ export default {
         }
       } catch (e) {
         console.error('支付失败', e);
-        uni.showToast({ title: '支付失败', icon: 'none' });
+        uni.showToast({ title: '支付失败，请重试', icon: 'none' });
       }
     }
   }

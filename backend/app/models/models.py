@@ -22,6 +22,7 @@ class Merchant(Base):
     products = relationship("Product", back_populates="merchant")
     tables = relationship("Table", back_populates="merchant")
     orders = relationship("Order", back_populates="merchant")
+    categories = relationship("Category", back_populates="merchant")
 
 
 class Category(Base):
@@ -34,8 +35,12 @@ class Category(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     
+    # 外键 - 添加商家关联
+    merchant_id = Column(Integer, ForeignKey("merchants.id"))
+    
     # 关联
     products = relationship("Product", back_populates="category")
+    merchant = relationship("Merchant", back_populates="categories")
 
 
 class Product(Base):

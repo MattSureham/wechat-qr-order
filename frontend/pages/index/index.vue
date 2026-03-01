@@ -1,110 +1,123 @@
 <template>
   <view class="container">
-    <!-- 商家信息头部 -->
-    <view class="merchant-header" v-if="merchant">
-      <image class="merchant-logo" :src="merchant.logo_url || '/static/logo.png'" mode="aspectFill" />
-      <view class="merchant-info">
-        <text class="merchant-name">{{ merchant.name }}</text>
-        <text class="merchant-desc">{{ merchant.description || '欢迎光临' }}</text>
-        <text class="merchant-hours">{{ merchant.business_hours || '9:00-21:00' }}</text>
-      </view>
+    <!-- Loading State -->
+    <view v-if="loading" class="loading-container">
+      <text>加载中...</text>
     </view>
 
-    <!-- 桌号提示 -->
-    <view class="table-tip" v-if="currentTable">
-      <text>📍 当前位置: {{ currentTable.table_number }}号桌</text>
+    <!-- Error State -->
+    <view v-else-if="error" class="error-container">
+      <text>{{ error }}</text>
+      <button @click="loadData">重试</button>
     </view>
 
-    <!-- 分类标签 -->
-    <scroll-view class="category-scroll" scroll-x>
-      <view class="category-list">
-        <view 
-          class="category-item" 
-          :class="{ active: selectedCategory === null }"
-          @click="selectCategory(null)"
-        >
-          全部
-        </view>
-        <view 
-          v-for="cat in categories" 
-          :key="cat.id"
-          class="category-item"
-          :class="{ active: selectedCategory === cat.id }"
-          @click="selectCategory(cat.id)"
-        >
-          {{ cat.name }}
+    <template v-else>
+      <!-- 商家信息头部 -->
+      <view class="merchant-header" v-if="merchant">
+        <image class="merchant-logo" :src="merchant.logo_url || '/static/logo.png'" mode="aspectFill" />
+        <view class="merchant-info">
+          <text class="merchant-name">{{ merchant.name }}</text>
+          <text class="merchant-desc">{{ merchant.description || '欢迎光临' }}</text>
+          <text class="merchant-hours">{{ merchant.business_hours || '9:00-21:00' }}</text>
         </view>
       </view>
-    </scroll-view>
 
-    <!-- 商品列表 -->
-    <scroll-view class="product-scroll" scroll-y>
-      <view class="product-list">
-        <view 
-          v-for="product in filteredProducts" 
-          :key="product.id"
-          class="product-item"
-          :class="{ unavailable: !product.is_available }"
-          @click="addToCart(product)"
-        >
-          <image class="product-image" :src="product.image_url || '/static/food.png'" mode="aspectFill" />
-          <view class="product-info">
-            <text class="product-name">{{ product.name }}</text>
-            <text class="product-desc">{{ product.description || '美味可口' }}</text>
-            <view class="product-price-row">
-              <text class="product-price">¥{{ product.price }}</text>
-              <text class="product-original" v-if="product.original_price">¥{{ product.original_price }}</text>
-              <text class="product-tag" v-if="product.is_featured">推荐</text>
+      <!-- 桌号提示 -->
+      <view class="table-tip" v-if="currentTable">
+        <text>📍 当前位置: {{ currentTable.table_number }}号桌</text>
+      </view>
+
+      <!-- 分类标签 -->
+      <scroll-view class="category-scroll" scroll-x>
+        <view class="category-list">
+          <view 
+            class="category-item" 
+            :class="{ active: selectedCategory === null }"
+            @click="selectCategory(null)"
+          >
+            全部
+          </view>
+          <view 
+            v-for="cat in categories" 
+            :key="cat.id"
+            class="category-item"
+            :class="{ active: selectedCategory === cat.id }"
+            @click="selectCategory(cat.id)"
+          >
+            {{ cat.name }}
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 商品列表 -->
+      <scroll-view class="product-scroll" scroll-y>
+        <view class="product-list">
+          <view 
+            v-for="product in filteredProducts" 
+            :key="product.id"
+            class="product-item"
+            :class="{ unavailable: !product.is_available }"
+            @click="addToCart(product)"
+          >
+            <image class="product-image" :src="product.image_url || '/static/food.png'" mode="aspectFill" />
+            <view class="product-info">
+              <text class="product-name">{{ product.name }}</text>
+              <text class="product-desc">{{ product.description || '美味可口' }}</text>
+              <view class="product-price-row">
+                <text class="product-price">¥{{ product.price }}</text>
+                <text class="product-original" v-if="product.original_price">¥{{ product.original_price }}</text>
+                <text class="product-tag" v-if="product.is_featured">推荐</text>
+              </view>
+            </view>
+            <view class="add-btn" @click.stop="addToCart(product)">
+              <text>+</text>
             </view>
           </view>
-          <view class="add-btn" @click.stop="addToCart(product)">
-            <text>+</text>
+        </view>
+      </scroll-view>
+
+      <!-- 购物车底部 -->
+      <view class="cart-bar" v-if="cart.length > 0" @click="showCart = true">
+        <view class="cart-icon">
+          <text>🛒</text>
+          <view class="cart-badge">{{ cartItemCount }}</view>
+        </view>
+        <view class="cart-info">
+          <text class="cart-total">¥{{ cartTotal }}</text>
+        </view>
+        <view class="checkout-btn" @click.stop="goToCheckout">
+          <text>去结算</text>
+        </view>
+      </view>
+
+      <!-- 购物车弹窗 -->
+      <view class="cart-modal" v-if="showCart" @click="showCart = false">
+        <view class="cart-content" @click.stop>
+          <view class="cart-header">
+            <text>购物车</text>
+            <text class="clear-btn" @click="clearCart">清空</text>
           </view>
-        </view>
-      </view>
-    </scroll-view>
-
-    <!-- 购物车底部 -->
-    <view class="cart-bar" v-if="cart.length > 0" @click="showCart = true">
-      <view class="cart-icon">
-        <text>🛒</text>
-        <view class="cart-badge">{{ cartItemCount }}</view>
-      </view>
-      <view class="cart-info">
-        <text class="cart-total">¥{{ cartTotal }}</text>
-      </view>
-      <view class="checkout-btn" @click.stop="goToCheckout">
-        <text>去结算</text>
-      </view>
-    </view>
-
-    <!-- 购物车弹窗 -->
-    <view class="cart-modal" v-if="showCart" @click="showCart = false">
-      <view class="cart-content" @click.stop>
-        <view class="cart-header">
-          <text>购物车</text>
-          <text class="clear-btn" @click="clearCart">清空</text>
-        </view>
-        <scroll-view class="cart-items" scroll-y>
-          <view v-for="item in cart" :key="item.id" class="cart-item">
-            <text class="item-name">{{ item.name }}</text>
-            <view class="item-controls">
-              <text class="minus-btn" @click="decreaseQuantity(item)">-</text>
-              <text class="item-quantity">{{ item.quantity }}</text>
-              <text class="plus-btn" @click="increaseQuantity(item)">+</text>
+          <scroll-view class="cart-items" scroll-y>
+            <view v-for="item in cart" :key="item.id" class="cart-item">
+              <text class="item-name">{{ item.name }}</text>
+              <view class="item-controls">
+                <text class="minus-btn" @click="decreaseQuantity(item)">-</text>
+                <text class="item-quantity">{{ item.quantity }}</text>
+                <text class="plus-btn" @click="increaseQuantity(item)">+</text>
+              </view>
+              <text class="item-price">¥{{ item.subtotal }}</text>
             </view>
-            <text class="item-price">¥{{ item.subtotal }}</text>
-          </view>
-        </scroll-view>
-        <view class="cart-footer">
-          <text class="total-label">合计:</text>
-          <text class="total-price">¥{{ cartTotal }}</text>
-          <view class="pay-btn" @click="goToCheckout">
-            <text>结算</text>
+          </scroll-view>
+          <view class="cart-footer">
+            <text class="total-label">合计:</text>
+            <text class="total-price">¥{{ cartTotal }}</text>
+            <view class="pay-btn" @click="goToCheckout">
+              <text>结算</text>
+            </view>
           </view>
         </view>
       </view>
-    </view>
+    </template>
   </view>
 </template>
 
@@ -119,11 +132,13 @@ export default {
       products: [],
       selectedCategory: null,
       currentTable: null,
-      showCart: false
+      showCart: false,
+      loading: true,
+      error: null
     };
   },
   computed: {
-    ...mapState(['cart']),
+    ...mapState(['cart', 'apiBaseUrl']),
     ...mapGetters(['cartItemCount', 'cartTotal']),
     filteredProducts() {
       if (!this.selectedCategory) {
@@ -133,6 +148,9 @@ export default {
     }
   },
   onLoad(options) {
+    // 从本地存储恢复桌位信息
+    this.currentTable = uni.getStorageSync('currentTable') || null;
+    
     // 获取桌码参数
     if (options.scene) {
       // 微信扫码跳转
@@ -145,45 +163,58 @@ export default {
   },
   methods: {
     async loadData() {
-      await Promise.all([
-        this.loadMerchant(),
-        this.loadCategories(),
-        this.loadProducts()
-      ]);
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        await Promise.all([
+          this.loadMerchant(),
+          this.loadCategories(),
+          this.loadProducts()
+        ]);
+      } catch (e) {
+        this.error = '加载数据失败，请检查网络连接';
+        console.error('加载数据失败', e);
+      } finally {
+        this.loading = false;
+      }
     },
     
     async loadMerchant() {
       try {
         const res = await uni.request({
-          url: 'http://localhost:8000/api/merchant?merchant_id=1'
+          url: `${this.apiBaseUrl}/api/merchant?merchant_id=1`
         });
         if (res.data) {
           this.merchant = res.data;
         }
       } catch (e) {
         console.error('加载商家失败', e);
+        throw e;
       }
     },
     
     async loadCategories() {
       try {
         const res = await uni.request({
-          url: 'http://localhost:8000/api/categories'
+          url: `${this.apiBaseUrl}/api/categories`
         });
         this.categories = res.data || [];
       } catch (e) {
         console.error('加载分类失败', e);
+        throw e;
       }
     },
     
     async loadProducts() {
       try {
         const res = await uni.request({
-          url: 'http://localhost:8000/api/products'
+          url: `${this.apiBaseUrl}/api/products`
         });
         this.products = res.data || [];
       } catch (e) {
         console.error('加载商品失败', e);
+        throw e;
       }
     },
     
@@ -191,7 +222,7 @@ export default {
       // 处理扫码结果
       try {
         const res = await uni.request({
-          url: `http://localhost:8000/api/tables/qr/${scene}`
+          url: `${this.apiBaseUrl}/api/tables/qr/${scene}`
         });
         if (res.data) {
           this.currentTable = res.data;
@@ -199,16 +230,21 @@ export default {
         }
       } catch (e) {
         console.error('桌码无效', e);
+        uni.showToast({
+          title: '桌码无效',
+          icon: 'none'
+        });
       }
     },
     
     async loadTable(tableId) {
       try {
         const res = await uni.request({
-          url: `http://localhost:8000/api/tables/qr/${tableId}`
+          url: `${this.apiBaseUrl}/api/tables/qr/${tableId}`
         });
         if (res.data) {
           this.currentTable = res.data;
+          uni.setStorageSync('currentTable', res.data);
         }
       } catch (e) {
         console.error('桌码无效', e);
@@ -220,6 +256,14 @@ export default {
     },
     
     addToCart(product) {
+      if (!product.is_available) {
+        uni.showToast({
+          title: '该商品已售罄',
+          icon: 'none'
+        });
+        return;
+      }
+      
       this.$store.commit('addToCart', product);
       uni.showToast({
         title: '已加入购物车',
@@ -241,6 +285,10 @@ export default {
     
     clearCart() {
       this.$store.commit('clearCart');
+      uni.showToast({
+        title: '购物车已清空',
+        icon: 'none'
+      });
     },
     
     goToCheckout() {
@@ -253,11 +301,34 @@ export default {
 };
 </script>
 
+
 <style>
 .container {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: 120rpx;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.error-container text {
+  color: #ff4d4f;
+  margin-bottom: 20rpx;
+}
+
+.error-container button {
+  background: #07c160;
+  color: #fff;
+  padding: 20rpx 40rpx;
+  border-radius: 40rpx;
 }
 
 .merchant-header {
